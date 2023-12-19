@@ -39,6 +39,8 @@ val denormalizedMoviesWithActorsDF = denormalizedMoviesWithDirectorsDF
   .join(oldRolesDF, denormalizedMoviesWithDirectorsDF("id") === oldRolesDF("movie_id"), "left_outer")
   .groupBy("id", "name", "year", "rank", "list_genres", "list_directors_id")
   .agg(F.size(F.collect_list("actor_id")).alias("den_nb_actors"))
+  .withColumn("id", $"id".cast(IntegerType))
+  .withColumn("list_directors_id", $"list_directors_id".cast(IntegerType))
 
 // Denormalize directors.list_movies_id
 val denormalizedDirectorsWithMoviesDF = directorsDF
@@ -60,25 +62,31 @@ val denormalizedDirectorsDF = denormalizedDirectorsWithMoviesDF
       )
     ).alias("dict_genres_den_prob")
   )
+  .withColumn("id", $"id".cast(IntegerType))
+  .withColumn("list_movies_id", $"list_movies_id".cast(IntegerType))
 
 // Denormalize actors.list_movies_id
 val denormalizedActorsDF = actorsDF
   .join(oldRolesDF, actorsDF("id") === oldRolesDF("actor_id"), "left_outer")
   .groupBy("id", "first_name", "last_name")
   .agg(F.collect_list("movie_id").alias("list_movies_id"))
+  .withColumn("id", $"id".cast(IntegerType))
+  .withColumn("list_movies_id", $"list_movies_id".cast(IntegerType))
 
 // Save the denormalized data to a JSON file
-denormalizedActorsDF.write.mode("overwrite").json(new_data_path + "denormalized_actors")
+denormalizedActorsDF.coalesce(1).write.mode("overwrite").format("json").save(new_data_path + "denActors.json")
 
 // Save the denormalized data to a JSON file
-denormalizedDirectorsDF.write
+denormalizedDirectorsDF.coalesce(1).write
   .mode("overwrite") // Use "overwrite" or "append" based on your requirement
-  .json(new_data_path + "denormalized_directors")
+  .format("json")
+  .save(new_data_path + "denDirectors.json")
 
 // Save the denormalized data to a JSON file
-denormalizedMoviesWithActorsDF.write
+denormalizedMoviesWithActorsDF.coalesce(1).write
   .mode("overwrite") // Use "overwrite" or "append" based on your requirement
-  .json(new_data_path + "denormalized_movies")
+  .format("json")
+  .save(new_data_path + "denMovies.json")
 
 // Stop the Spark session
 spark.stop()
