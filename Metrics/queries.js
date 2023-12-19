@@ -237,45 +237,41 @@ db.actors.update(
 
 
 // Directors id
-db.directors.update(
+db.directors.updateMany(
     {},
-    [{
+    {
         $set: {
             "id": {
-                $convert:
-                {
-                    input: "$id",
-                    to: "int",
-                    onError: null,
-                    onNull: null
-                }
+                $toInt: "$id"
+                // $convert:
+                // {
+                //     input: "$id",
+                //     to: "int",
+                //     onError: null,
+                //     onNull: null
+                // }
             }
         }
-    }],
+    },
     {
         multi: true
     }
 );
 
 // Directors list_movies_id
-db.directors.update(
+db.directors.updateMany(
     {},
-    [
-        {
-            $set: {
-                "list_movies_id": {
-                    $map: {
-                        input: "$list_movies_id",
-                        as: "movieId",
-                        in: { $toInt: "$$movieId" }
-                    }
+    [{
+        $set: {
+            "list_movies_id": {
+                $map: {
+                    input: "$list_movies_id",
+                    as: "movieId",
+                    in: { $toInt: "$$movieId" }
                 }
             }
         }
-    ],
-    {
-        multi: true
-    }
+    }]
 );
 
 // Directors dict_genres_den_prob
